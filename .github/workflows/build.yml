@@ -1,3 +1,4 @@
+
 name: Build AURA OS APK
 
 on:
@@ -26,28 +27,45 @@ jobs:
           gradle-version: '8.7'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
         run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
-          
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMANAGER=$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit)
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Android SDK manager not found"
+            exit 1
+          fi
+
+          echo "Using SDK manager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+
+          "$SDKMANAGER" --install \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools"
+
       - name: Extract AURA OS source
         run: |
           unzip -q AURA_OS_Android9_Source_v2.zip -d source
 
       - name: Locate Android project
         run: |
-          find source -name settings.gradle -o -name settings.gradle.kts
+          PROJECT_DIR=$(find source -type f \( \
+            -name settings.gradle -o \
+            -name settings.gradle.kts \
+            \) -print -quit | xargs dirname)
 
-      - name: Build AURA OS
-        run: |
-          PROJECT_DIR=$(find source -name settings.gradle -o -name settings.gradle.kts | head -n 1 | xargs dirname)
           if [ -z "$PROJECT_DIR" ]; then
             echo "Android Gradle project not found"
             exit 1
           fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Build AURA OS
+        run: |
           cd "$PROJECT_DIR"
+
           if [ -f gradlew ]; then
             chmod +x gradlew
             ./gradlew assembleDebug
