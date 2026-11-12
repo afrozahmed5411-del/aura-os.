@@ -25,23 +25,16 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Check Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          which sdkmanager || true
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Accept SDK licenses
-        run: |
-          yes | sdkmanager --licenses
-
-      - name: Install Android SDK
+      - name: Install Android SDK packages
         run: |
           sdkmanager "platforms;android-34" "build-tools;34.0.0"
-
+          
       - name: Extract AURA OS source
         run: |
-          unzip -q AURA_OS_Android9_Source.zip -d source
+          unzip -q AURA_OS_Android9_Source_v2.zip -d source
 
       - name: Locate Android project
         run: |
